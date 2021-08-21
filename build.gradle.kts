@@ -33,6 +33,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.12.4")
     implementation("org.springframework.boot:spring-boot-autoconfigure")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.1")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.5.21")
     testImplementation(kotlin("test"))
 }

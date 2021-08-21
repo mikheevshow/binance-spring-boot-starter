@@ -1,13 +1,14 @@
 package io.mikheevshow.stream
 
 import io.mikheevshow.event.EventHandler
+import kotlinx.coroutines.runBlocking
 import org.apache.logging.log4j.kotlin.logger
 import java.net.http.WebSocket
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.CompletionStage
 
-class BinanceWebSocketListener(val eventHandler: EventHandler) : WebSocket.Listener {
+class BinanceWebSocketListener(private val eventHandler: EventHandler) : WebSocket.Listener {
 
     private val logger = logger()
 
@@ -18,7 +19,9 @@ class BinanceWebSocketListener(val eventHandler: EventHandler) : WebSocket.Liste
 
     override fun onText(webSocket: WebSocket, data: CharSequence, last: Boolean): CompletionStage<*>? {
         logger.debug { "Event received: $data" }
-        eventHandler.handleEvent(data)
+        runBlocking {
+            eventHandler.handleEvent(data)
+        }
         return super.onText(webSocket, data, last)
     }
 

@@ -10,6 +10,6 @@ enum class EventType(val event: String, val stream: String) {
 
     companion object {
         // Hot Spot optimizations
-        val events = listOf(*values()).map { it.event }
+        val events = listOf(*values())
     }
 }

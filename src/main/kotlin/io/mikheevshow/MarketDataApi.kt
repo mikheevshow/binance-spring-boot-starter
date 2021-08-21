@@ -4,17 +4,19 @@ interface MarketDataApi {
 
     fun ping(): Boolean
 
-    fun serverTime()
+    fun serverTime(): ServerTime
 
-    fun exchangeInfo(vararg symbol: String)
+    fun exchangeInfo(vararg symbols: String): ExchangeInfo
 
-    fun depth(symbol: String, limit: Int? = null)
+    fun depth(symbol: String, limit: Int = 100): MarketDepth
 
-    fun tradesList(symbol: String, limit: Int? = null)
+    fun trades(symbol: String, limit: Int = 500): List<Trade>
 
-    fun candlesticks(symbol: String, interval: String, startTime: Long? = null, endTime: Long? = null, limit: Int? = null)
+    fun historicalTrades(symbol: String, limit: Int = 500, mbxApiKey: String, fromId: Long? = null): List<Trade>
 
-    fun averagePrice(symbol: String)
+    fun candlesticks(symbol: String, interval: String, startTime: Long? = null, endTime: Long? = null, limit: Int = 500): List<Candlestick>
+
+    fun averagePrice(symbol: String): AveragePrice
 
     fun dailyTicker(symbol: String)
 
