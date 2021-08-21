@@ -8,14 +8,14 @@ import io.mikheevshow.MarketDepthUpdate
 import io.mikheevshow.PriceLevelQuantity
 import io.mikheevshow.event.EventType.*
 import io.mikheevshow.event.listener.CandlestickUpdateListener
-import io.mikheevshow.event.listener.Listeners
+import io.mikheevshow.event.listener.ListenerProvider
 import io.mikheevshow.event.listener.MarketDepthUpdateListener
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.apache.logging.log4j.kotlin.logger
 
 @Suppress("UNCHECKED_CAST")
-class EventHandlerImpl(private val listeners: Listeners) : EventHandler {
+class EventHandlerImpl(private val listenerProvider: ListenerProvider) : EventHandler {
 
     private val logger = logger()
     private val json = jacksonObjectMapper()
@@ -25,7 +25,7 @@ class EventHandlerImpl(private val listeners: Listeners) : EventHandler {
             when (it) {
                 KLINE -> {
                     val candlestickUpdate = convertToCandlestickUpdate(rawData)
-                    (listeners.get(it) as List<CandlestickUpdateListener>).forEach {
+                    (listenerProvider.get(it) as List<CandlestickUpdateListener>).forEach {
                         coroutineScope {
                             async {
                                 it.newEvent(candlestickUpdate)
@@ -35,7 +35,7 @@ class EventHandlerImpl(private val listeners: Listeners) : EventHandler {
                 }
                 DEPTH_UPDATE -> {
                     val marketDepthUpdate = convertToDepthUpdate(rawData)
-                    (listeners.get(it) as List<MarketDepthUpdateListener>).forEach {
+                    (listenerProvider.get(it) as List<MarketDepthUpdateListener>).forEach {
                         coroutineScope {
                             async {
                                 it.newEvent(marketDepthUpdate)

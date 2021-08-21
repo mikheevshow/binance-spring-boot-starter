@@ -1,5 +1,5 @@
 package io.mikheevshow.event.listener
 
-interface Listener<T> {
+interface BinanceListener<T> {
     fun newEvent(event: T)
 }
