@@ -1,8 +1,11 @@
 package io.mikheevshow.event
 
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.mikheevshow.CandlestickUpdate
 import io.mikheevshow.MarketDepthUpdate
+import io.mikheevshow.PriceLevelQuantity
 import io.mikheevshow.event.EventType.*
 import io.mikheevshow.event.listener.CandlestickUpdateListener
 import io.mikheevshow.event.listener.Listeners
@@ -19,7 +22,7 @@ class EventHandlerImpl(private val listeners: Listeners) : EventHandler {
 
     override suspend fun handleEvent(rawData: CharSequence) {
         EventType.events.firstOrNull { rawData.contains(it.event) }?.let {
-            val update: Any = when (it) {
+            when (it) {
                 KLINE -> {
                     val candlestickUpdate = convertToCandlestickUpdate(rawData)
                     (listeners.get(it) as List<CandlestickUpdateListener>).forEach {
@@ -74,6 +77,29 @@ class EventHandlerImpl(private val listeners: Listeners) : EventHandler {
     }
 
     private fun convertToDepthUpdate(rawData: CharSequence): MarketDepthUpdate {
-        TODO()
+        val updateNode = json.readTree(rawData.toString())
+        return MarketDepthUpdate(
+            eventTime = updateNode.get("E").asLong(),
+            symbol = updateNode.get("s").asText(),
+            firstUpdateId = updateNode.get("U").asLong(),
+            finalUpdateId = updateNode.get("u").asLong(),
+            bids = updateNode.get("b").mapToPriceLevelQuantity(),
+            asks = updateNode.get("a").mapToPriceLevelQuantity()
+        )
+    }
+
+    private fun JsonNode.mapToPriceLevelQuantity(): List<PriceLevelQuantity> {
+        val list = mutableListOf<PriceLevelQuantity>()
+        this.forEach { node ->
+            val arrayNode = node as ArrayNode
+            list.add(
+                PriceLevelQuantity(
+                    priceLevel = arrayNode.get(0).asDouble(),
+                    quantity = arrayNode.get(1).asLong()
+                )
+            )
+        }
+
+        return list
     }
 }

@@ -42,22 +42,19 @@ data class MarketDepth(
     val asks: List<Any>
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+
 data class MarketDepthUpdate(
-    @JsonProperty("e")
-    val event: EventType,
-    @JsonProperty("E")
     val eventTime: Long,
-    @JsonProperty("s")
     val symbol: String,
-    @JsonProperty("U")
     val firstUpdateId: Long,
-    @JsonProperty("u")
     val finalUpdateId: Long,
-    @JsonProperty("b")
-    val bids: List<Any>,
-    @JsonProperty("a")
-    val asks: List<Any>
+    val bids: List<PriceLevelQuantity>,
+    val asks: List<PriceLevelQuantity>
+)
+
+data class PriceLevelQuantity(
+    val priceLevel: Double,
+    val quantity: Long
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
