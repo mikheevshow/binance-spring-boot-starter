@@ -10,11 +10,10 @@ import kotlin.random.nextUInt
 data class Subscription(
     val method: String = "SUBSCRIBE",
     val params: List<String>,
-    val id: UInt = Random.nextUInt()
+    val id: Int = Random.nextInt(0, Int.MAX_VALUE)
 )
 
-@Component
-class MarketStreamsImpl(val binanceWebSocketChannel: WebSocket, val objectMapper: ObjectMapper) : MarketStreams {
+class MarketStreamsImpl(private val binanceWebSocketChannel: WebSocket, private val objectMapper: ObjectMapper) : MarketStreams {
 
     private val logger = logger()
 
@@ -27,7 +26,7 @@ class MarketStreamsImpl(val binanceWebSocketChannel: WebSocket, val objectMapper
     }
 
     override fun unsubscribe(vararg streams: String) {
-        logger.info { "Trying to unsubscribe from streams: `$streams`" }
+        logger.info { "Trying to unsubscribe from streams: `${streams.joinToString()}`" }
         if (!binanceWebSocketChannel.isInputClosed) {
             val subscription = Subscription(
                 method = "UNSUBSCRIBE",

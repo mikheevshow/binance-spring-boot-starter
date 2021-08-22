@@ -19,8 +19,12 @@ class BinanceWebSocketListener(private val eventHandler: EventHandler) : WebSock
 
     override fun onText(webSocket: WebSocket, data: CharSequence, last: Boolean): CompletionStage<*>? {
         logger.debug { "Event received: $data" }
-        runBlocking {
-            eventHandler.handleEvent(data)
+        try {
+            runBlocking {
+                eventHandler.handleEvent(data)
+            }
+        } catch (ex: Exception) {
+            logger.error(ex)
         }
         return super.onText(webSocket, data, last)
     }

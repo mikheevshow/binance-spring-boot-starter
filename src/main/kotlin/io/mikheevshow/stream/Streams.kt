@@ -42,12 +42,21 @@ val availableIntervals = setOf(
     one_week,
     one_month
 )
-fun kline(symbol: String, interval: String) =
-    if (availableIntervals.contains(interval)) "$symbol@kline_$interval" else throw RuntimeException("Incorrect interval `$interval`, use one of $availableIntervals")
+fun kline(symbol: String, interval: String): String {
+    if (availableIntervals.contains(interval)) {
+        return "${symbol.lowercase()}@kline_$interval"
+    } else {
+        throw RuntimeException("Incorrect interval `$interval`, use one of $availableIntervals")
+    }
+}
 
-fun miniTicker(symbol: String) = "$symbol@miniTicker"
+fun miniTicker(symbol: String): String {
+    return "${symbol.lowercase()}@miniTicker"
+}
 
-fun ticker(symbol: String) = "$symbol@ticker"
+fun ticker(symbol: String): String {
+    return "${symbol.lowercase()}@ticker"
+}
 
 const val five = 5
 const val ten = 10
@@ -60,9 +69,18 @@ fun partialDepth(symbol: String, limit: Int): String {
         throw RuntimeException("Incorrect limit `$limit`, use one of $availableLimits")
     }
 }
-fun partialDepth100ms(symbol: String, limit: Int) =
-    if (availableLimits.contains(limit)) "$symbol@depth$limit@100ms" else throw RuntimeException("Incorrect limit `$limit`, use one of $availableLimits")
+fun partialDepth100ms(symbol: String, limit: Int): String {
+    if (availableLimits.contains(limit)) {
+        return "${symbol.lowercase()}@depth$limit@100ms"
+    } else {
+        throw RuntimeException("Incorrect limit `$limit`, use one of $availableLimits")
+    }
+}
 
-fun depth(symbol: String) = "$symbol@depth"
+fun depth(symbol: String): String {
+    return "${symbol.lowercase()}@depth"
+}
 
-fun depth100ms(symbol: String) = "$symbol@depth@100ms"
+fun depth100ms(symbol: String): String {
+    return "${symbol.lowercase()}@depth@100ms"
+}

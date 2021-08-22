@@ -12,6 +12,7 @@ import io.mikheevshow.event.listener.ListenerProvider
 import io.mikheevshow.event.listener.MarketDepthUpdateListener
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import org.apache.logging.log4j.kotlin.logger
 
 @Suppress("UNCHECKED_CAST")
@@ -27,7 +28,7 @@ class EventHandlerImpl(private val listenerProvider: ListenerProvider) : EventHa
                     val candlestickUpdate = convertToCandlestickUpdate(rawData)
                     (listenerProvider.get(it) as List<CandlestickUpdateListener>).forEach {
                         coroutineScope {
-                            async {
+                            launch {
                                 it.newEvent(candlestickUpdate)
                             }
                         }
@@ -37,7 +38,7 @@ class EventHandlerImpl(private val listenerProvider: ListenerProvider) : EventHa
                     val marketDepthUpdate = convertToDepthUpdate(rawData)
                     (listenerProvider.get(it) as List<MarketDepthUpdateListener>).forEach {
                         coroutineScope {
-                            async {
+                            launch {
                                 it.newEvent(marketDepthUpdate)
                             }
                         }
