@@ -5,12 +5,12 @@ plugins {
     kotlin("plugin.spring") version "1.5.21"
     id("org.springframework.boot") version "2.5.3"
     id("io.spring.dependency-management") version "1.0.11.RELEASE"
-    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
+    id("io.github.gradle-nexus.publish-plugin") version "1.1.0" apply true
     `java-library`
     `maven-publish`
 }
 
-group = "me.ilyamikheev"
+group = "io.mikheevshow"
 version = "1.0-SNAPSHOT"
 
 publishing {
@@ -23,6 +23,7 @@ publishing {
 
 repositories {
     mavenCentral()
+    mavenLocal()
     maven("https://nexus.pentaho.org/content/groups/omni/")
 }
 
@@ -31,7 +32,7 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-api:2.14.1")
     implementation("org.apache.logging.log4j:log4j-core:2.14.1")
     implementation("org.springframework.boot:spring-boot-starter")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.12.4")
+    api("com.fasterxml.jackson.module:jackson-module-kotlin:2.12.4")
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.1")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.5.21")
@@ -42,8 +43,25 @@ tasks.test {
     useJUnitPlatform()
 }
 
+tasks.withType<JavaCompile> {
+    sourceCompatibility = "1.8"
+    targetCompatibility = "1.8"
+}
+
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions {
+        freeCompilerArgs = listOf("-Xjsr305=strict")
+        jvmTarget = "1.8"
+        incremental = false
+    }
+}
+
+tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar>().configureEach {
+    this.enabled = false
+}
+
+tasks.jar {
+    enabled = true
 }
 
 java {
