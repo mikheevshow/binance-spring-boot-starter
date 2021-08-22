@@ -14,7 +14,7 @@ from them.
 class SomeService(val marketStreams: MarketStreams) {
     @PostConstruct
     fun init() {
-        marketStreams.subscribe(kline("BNBBTC"), aggTrade("BNBBTC"))
+        marketStreams.subscribe(kline("BNBBTC",  interval = one_minute), aggTrade("BNBBTC"))
     }
 }
 
