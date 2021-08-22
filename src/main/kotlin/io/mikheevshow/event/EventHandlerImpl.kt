@@ -3,14 +3,10 @@ package io.mikheevshow.event
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import io.mikheevshow.CandlestickUpdate
-import io.mikheevshow.MarketDepthUpdate
+import com.fasterxml.jackson.module.kotlin.readValue
 import io.mikheevshow.PriceLevelQuantity
 import io.mikheevshow.event.EventType.*
-import io.mikheevshow.event.listener.CandlestickUpdateListener
-import io.mikheevshow.event.listener.ListenerProvider
-import io.mikheevshow.event.listener.MarketDepthUpdateListener
-import kotlinx.coroutines.async
+import io.mikheevshow.event.listener.*
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.apache.logging.log4j.kotlin.logger
@@ -44,8 +40,26 @@ class EventHandlerImpl(private val listenerProvider: ListenerProvider) : EventHa
                         }
                     }
                 }
-                AGGREGATE_TRADE -> {}
-                TRADE -> {}
+                AGGREGATE_TRADE -> {
+                    val aggregateTradeUpdate = json.readValue<AggregateTradeUpdate>(rawData.toString())
+                    (listenerProvider.get(it) as List<AggregateTradeUpdateListener>).forEach {
+                        coroutineScope {
+                            launch {
+                                it.newEvent(aggregateTradeUpdate)
+                            }
+                        }
+                    }
+                }
+                TRADE -> {
+                    val tradeUpdate = json.readValue<TradeUpdate>(rawData.toString())
+                    (listenerProvider.get(it) as List<TradeUpdateListener>).forEach {
+                        coroutineScope {
+                            launch {
+                                it.newEvent(tradeUpdate)
+                            }
+                        }
+                    }
+                }
                 MINI_TICKER -> {}
                 TICKER -> {}
             }
