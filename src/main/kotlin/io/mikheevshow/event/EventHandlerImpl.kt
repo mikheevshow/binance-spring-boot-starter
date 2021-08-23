@@ -3,10 +3,14 @@ package io.mikheevshow.event
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
+import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.mikheevshow.PriceLevelQuantity
 import io.mikheevshow.event.EventType.*
 import io.mikheevshow.event.listener.*
+import io.mikheevshow.json.getBoolean
+import io.mikheevshow.json.getDouble
+import io.mikheevshow.json.getLong
+import io.mikheevshow.json.getText
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.apache.logging.log4j.kotlin.logger
@@ -18,86 +22,106 @@ class EventHandlerImpl(private val listenerProvider: ListenerProvider) : EventHa
     private val json = jacksonObjectMapper()
 
     override suspend fun handleEvent(rawData: CharSequence) {
-        EventType.events.firstOrNull { rawData.contains(it.event) }?.let {
-            when (it) {
-                KLINE -> {
-                    val candlestickUpdate = convertToCandlestickUpdate(rawData)
-                    (listenerProvider.get(it) as List<CandlestickUpdateListener>).forEach {
-                        coroutineScope {
-                            launch {
-                                it.newEvent(candlestickUpdate)
+        kotlin.runCatching {
+            val event = json.readTree(rawData.toString())
+            if (event.has("e")) {
+                when (event.getText("e")) {
+                    KLINE.event -> {
+                        val candlestickUpdate = convertToCandlestickUpdate(event)
+                        (listenerProvider.get(KLINE) as List<CandlestickUpdateListener>).forEach {
+                            coroutineScope {
+                                launch {
+                                    it.newEvent(candlestickUpdate)
+                                }
                             }
                         }
                     }
-                }
-                DEPTH_UPDATE -> {
-                    val marketDepthUpdate = convertToDepthUpdate(rawData)
-                    (listenerProvider.get(it) as List<MarketDepthUpdateListener>).forEach {
-                        coroutineScope {
-                            launch {
-                                it.newEvent(marketDepthUpdate)
+                    DEPTH_UPDATE.event -> {
+                        val marketDepthUpdate = convertToDepthUpdate(event)
+                        (listenerProvider.get(DEPTH_UPDATE) as List<MarketDepthUpdateListener>).forEach {
+                            coroutineScope {
+                                launch {
+                                    it.newEvent(marketDepthUpdate)
+                                }
                             }
                         }
                     }
-                }
-                AGGREGATE_TRADE -> {
-                    val aggregateTradeUpdate = json.readValue<AggregateTradeUpdate>(rawData.toString())
-                    (listenerProvider.get(it) as List<AggregateTradeUpdateListener>).forEach {
-                        coroutineScope {
-                            launch {
-                                it.newEvent(aggregateTradeUpdate)
+                    AGGREGATE_TRADE.event -> {
+                        val aggregateTradeUpdate = json.treeToValue<AggregateTradeUpdate>(event) ?: throw RuntimeException("Can't parse aggregate trade update: $rawData")
+                        (listenerProvider.get(AGGREGATE_TRADE) as List<AggregateTradeUpdateListener>).forEach {
+                            coroutineScope {
+                                launch {
+                                    it.newEvent(aggregateTradeUpdate)
+                                }
                             }
                         }
                     }
-                }
-                TRADE -> {
-                    val tradeUpdate = json.readValue<TradeUpdate>(rawData.toString())
-                    (listenerProvider.get(it) as List<TradeUpdateListener>).forEach {
-                        coroutineScope {
-                            launch {
-                                it.newEvent(tradeUpdate)
+                    TRADE.event -> {
+                        val tradeUpdate = json.treeToValue<TradeUpdate>(event) ?: throw RuntimeException("Can't parse trade update: $rawData")
+                        (listenerProvider.get(TRADE) as List<TradeUpdateListener>).forEach {
+                            coroutineScope {
+                                launch {
+                                    it.newEvent(tradeUpdate)
+                                }
                             }
                         }
                     }
+                    TICKER.event -> {
+
+                    }
+                    MINI_TICKER.event -> {
+
+                    }
                 }
-                MINI_TICKER -> {}
-                TICKER -> {}
+            } else if (event.has("lastUpdateId") && event.has("bids") && event.has("asks")) {
+                val partialDepthUpdate = MarketPartialDepthUpdate(
+                    lastUpdateId = event.getLong("lastUpdateId"),
+                    bids = event.get("bids").mapToPriceLevelQuantity(),
+                    asks = event.get("asks").mapToPriceLevelQuantity()
+                )
+                (listenerProvider.get(PARTIAL_DEPTH_UPDATE) as List<MarketPartialDepthUpdateListener>).forEach {
+                    coroutineScope {
+                        launch {
+                            it.newEvent(partialDepthUpdate)
+                        }
+                    }
+                }
+            } else {
+                logger.info { "Event received can't do anything with it. Event: $rawData" }
             }
-        } ?: logger.warn { "Unexpected event $rawData" }
+        }
     }
 
-    private fun convertToCandlestickUpdate(rawData: CharSequence): CandlestickUpdate {
-        val updateNode = json.readTree(rawData.toString())
+    private fun convertToCandlestickUpdate(updateNode: JsonNode): CandlestickUpdate {
         val candlestickNode = updateNode.get("k")
         return CandlestickUpdate(
-            eventTime = updateNode.get("E").asLong(),
-            symbol = updateNode.get("s").asText(),
-            candleStickStartTime = candlestickNode.get("t").asLong(),
-            candleStickCloseTime = candlestickNode.get("T").asLong(),
-            interval = candlestickNode.get("i").asText(),
-            firstTradeId = candlestickNode.get("f").asLong(),
-            lastTradeId = candlestickNode.get("L").asLong(),
-            openPrice = candlestickNode.get("o").asDouble(),
-            closePrice = candlestickNode.get("c").asDouble(),
-            highPrice = candlestickNode.get("h").asDouble(),
-            lowPrice = candlestickNode.get("l").asDouble(),
-            baseAssetVolume = candlestickNode.get("v").asLong(),
-            numberOfTrades = candlestickNode.get("n").asLong(),
-            isCandlestickClosed = candlestickNode.get("x").asBoolean(),
-            quoteAssetVolume = candlestickNode.get("q").asDouble(),
-            takerBuyBaseAssetVolume = candlestickNode.get("V").asDouble(),
-            takerBuyQuoteAssetVolume = candlestickNode.get("Q").asDouble(),
-            ignore = candlestickNode.get("B").asDouble()
+            eventTime = updateNode.getLong("E"),
+            symbol = updateNode.getText("s"),
+            candleStickStartTime = candlestickNode.getLong("t"),
+            candleStickCloseTime = candlestickNode.getLong("T"),
+            interval = candlestickNode.getText("i"),
+            firstTradeId = candlestickNode.getLong("f"),
+            lastTradeId = candlestickNode.getLong("L"),
+            openPrice = candlestickNode.getDouble("o"),
+            closePrice = candlestickNode.getDouble("c"),
+            highPrice = candlestickNode.getDouble("h"),
+            lowPrice = candlestickNode.getDouble("l"),
+            baseAssetVolume = candlestickNode.getLong("v"),
+            numberOfTrades = candlestickNode.getLong("n"),
+            isCandlestickClosed = candlestickNode.getBoolean("x"),
+            quoteAssetVolume = candlestickNode.getDouble("q"),
+            takerBuyBaseAssetVolume = candlestickNode.getDouble("V"),
+            takerBuyQuoteAssetVolume = candlestickNode.getDouble("Q"),
+            ignore = candlestickNode.getDouble("B")
         )
     }
 
-    private fun convertToDepthUpdate(rawData: CharSequence): MarketDepthUpdate {
-        val updateNode = json.readTree(rawData.toString())
+    private fun convertToDepthUpdate(updateNode: JsonNode): MarketDepthUpdate {
         return MarketDepthUpdate(
-            eventTime = updateNode.get("E").asLong(),
-            symbol = updateNode.get("s").asText(),
-            firstUpdateId = updateNode.get("U").asLong(),
-            finalUpdateId = updateNode.get("u").asLong(),
+            eventTime = updateNode.getLong("E"),
+            symbol = updateNode.getText("s"),
+            firstUpdateId = updateNode.getLong("U"),
+            finalUpdateId = updateNode.getLong("u"),
             bids = updateNode.get("b").mapToPriceLevelQuantity(),
             asks = updateNode.get("a").mapToPriceLevelQuantity()
         )
@@ -109,8 +133,8 @@ class EventHandlerImpl(private val listenerProvider: ListenerProvider) : EventHa
             val arrayNode = node as ArrayNode
             list.add(
                 PriceLevelQuantity(
-                    priceLevel = arrayNode.get(0).asDouble(),
-                    quantity = arrayNode.get(1).asLong()
+                    priceLevel = arrayNode.getDouble(0),
+                    quantity = arrayNode.getLong(1)
                 )
             )
         }

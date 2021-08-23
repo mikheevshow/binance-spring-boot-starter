@@ -10,6 +10,7 @@ class ListenerProviderImpl(binanceListeners: List<BinanceListener<*>>) : Listene
     init {
         val candlestickUpdateListeners = mutableListOf<CandlestickUpdateListener>()
         val marketDepthUpdateListeners = mutableListOf<MarketDepthUpdateListener>()
+        val partialDepthUpdateListeners = mutableListOf<MarketPartialDepthUpdateListener>()
         val tradeUpdateListeners = mutableListOf<TradeUpdateListener>()
         val aggregateTradeUpdateListeners = mutableListOf<AggregateTradeUpdateListener>()
 
@@ -17,6 +18,7 @@ class ListenerProviderImpl(binanceListeners: List<BinanceListener<*>>) : Listene
             when(it) {
                 is CandlestickUpdateListener -> candlestickUpdateListeners.add(it)
                 is MarketDepthUpdateListener -> marketDepthUpdateListeners.add(it)
+                is MarketPartialDepthUpdateListener -> partialDepthUpdateListeners.add(it)
                 is TradeUpdateListener -> tradeUpdateListeners.add(it)
                 is AggregateTradeUpdateListener -> aggregateTradeUpdateListeners.add(it)
             }
@@ -25,6 +27,7 @@ class ListenerProviderImpl(binanceListeners: List<BinanceListener<*>>) : Listene
         listenersMap = mapOf(
             KLINE to candlestickUpdateListeners,
             DEPTH_UPDATE to marketDepthUpdateListeners,
+            PARTIAL_DEPTH_UPDATE to partialDepthUpdateListeners,
             TRADE to tradeUpdateListeners,
             AGGREGATE_TRADE to aggregateTradeUpdateListeners
         )

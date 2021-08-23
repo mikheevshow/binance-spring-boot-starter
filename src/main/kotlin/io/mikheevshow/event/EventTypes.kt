@@ -6,7 +6,8 @@ enum class EventType(val event: String, val stream: String) {
     KLINE("kline", "kline"),
     MINI_TICKER("24hrMiniTicker", "24hrMiniTicker"),
     TICKER("24hrTicker", "ticker"),
-    DEPTH_UPDATE("depthUpdate", "depth");
+    DEPTH_UPDATE("depthUpdate", "depth"),
+    PARTIAL_DEPTH_UPDATE("", "depth");
 
     companion object {
         // Hot Spot optimizations
